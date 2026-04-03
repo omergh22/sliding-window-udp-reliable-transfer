@@ -1,0 +1,799 @@
+name: Autograding Tests
+'on':
+- push
+- repository_dispatch
+permissions:
+  checks: write
+  actions: read
+  contents: read
+jobs:
+  run-autograding-tests:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-classroom[bot]'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Gradle Build JARs
+      id: gradle-build-jars
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: Gradle Build JARs
+        setup-command: ''
+        command: gradle jar
+        timeout: 10
+        max-score: 0
+    - name: Copy Sender JAR
+      id: copy-sender-jar
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: Copy Sender JAR
+        setup-command: ''
+        command: cp SlidingWindowSender/build/libs/SlidingWindowSender-5785.jar .
+        timeout: 1
+        max-score: 0
+    - name: Copy Receiver JAR
+      id: copy-receiver-jar
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: Copy Receiver JAR
+        setup-command: ''
+        command: cp SlidingWindowReceiver/build/libs/SlidingWindowReceiver-5785.jar
+          .
+        timeout: 1
+        max-score: 0
+    - name: Make output dir
+      id: make-output-dir
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: Make output dir
+        setup-command: ''
+        command: mkdir outfiles
+        timeout: 1
+        max-score: 0
+    - name: Run test script
+      id: run-test-script
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: Run test script
+        setup-command: chmod 700 sliding-window-tests.bat
+        command: "./sliding-window-tests.bat"
+        timeout: 10
+        max-score: 0
+    - name: Check file contents
+      id: check-file-contents
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Check file contents
+        setup-command: ''
+        command: cat outfiles/file-checksum-results.txt | sort
+        input: ''
+        expected-output: |-
+          outfiles/Test1-file1-out.txt: OK
+          outfiles/Test10-file3-out.pdf: OK
+          outfiles/Test11-file3-out.pdf: OK
+          outfiles/Test12-file1-out.txt: OK
+          outfiles/Test13-file2-out.txt: OK
+          outfiles/Test14-file1-out.txt: OK
+          outfiles/Test15-file2-out.txt: OK
+          outfiles/Test2-file1-out.txt: OK
+          outfiles/Test3-file1-out.txt: OK
+          outfiles/Test4-file2-out.txt: OK
+          outfiles/Test5-file2-out.txt: OK
+          outfiles/Test6-file2-out.txt: OK
+          outfiles/Test7-file3-out.pdf: OK
+          outfiles/Test8-file3-out.pdf: OK
+          outfiles/Test9-file3-out.pdf: OK
+          tests/file1.txt: OK
+          tests/file2.txt: OK
+          tests/file3.pdf: OK
+        comparison-method: contains
+        timeout: 1
+        max-score: 15
+    - name: Test1 Sender
+      id: test1-sender
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test1 Sender
+        setup-command: ''
+        command: head -n 3 Test1-sender-output.txt && tail -n 5 Test1-sender-output.txt
+        input: ''
+        expected-output: Sent packet\s+0\s+Sent packet\s+1\s+Sent packet\s+2\s+Received
+          ACK on 25\s+Received ACK on 26\s+Received ACK on 27\s+Sent final packet\s+for
+          tests\/file1.txt\s+Received ACK 28
+        comparison-method: regex
+        timeout: 1
+        max-score: 3
+    - name: Test1 Receiver
+      id: test1-receiver
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test1 Receiver
+        setup-command: ''
+        command: grep -E 'Received packet[[:space:]]+[[:digit:]]+[[:space:]]+valid
+          CRC$' Test1-receiver-output.txt | sort
+        input: ''
+        expected-output: Received packet\s+0 valid CRC\s+Received packet\s+1 valid
+          CRC\s+Received packet\s+10 valid CRC\s+Received packet\s+11 valid CRC\s+Received
+          packet\s+12 valid CRC\s+Received packet\s+13 valid CRC\s+Received packet\s+14
+          valid CRC\s+Received packet\s+15 valid CRC\s+Received packet\s+16 valid
+          CRC\s+Received packet\s+17 valid CRC\s+Received packet\s+18 valid CRC\s+Received
+          packet\s+19 valid CRC\s+Received packet\s+2 valid CRC\s+Received packet\s+20
+          valid CRC\s+Received packet\s+21 valid CRC\s+Received packet\s+22 valid
+          CRC\s+Received packet\s+23 valid CRC\s+Received packet\s+24 valid CRC\s+Received
+          packet\s+25 valid CRC\s+Received packet\s+26 valid CRC\s+Received packet\s+27
+          valid CRC\s+Received packet\s+3 valid CRC\s+Received packet\s+4 valid CRC\s+Received
+          packet\s+5 valid CRC\s+Received packet\s+6 valid CRC\s+Received packet\s+7
+          valid CRC\s+Received packet\s+8 valid CRC\s+Received packet\s+9 valid CRC
+        comparison-method: regex
+        timeout: 1
+        max-score: 3
+    - name: Test2 Sender
+      id: test2-sender
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test2 Sender
+        setup-command: ''
+        command: head -n 10 Test2-sender-output.txt && tail -n 5 Test2-sender-output.txt
+        input: ''
+        expected-output: Sent packet\s+0\s+Sent packet\s+1\s+Sent packet\s+2\s+Sent
+          packet\s+3\s+Sent packet\s+4\s+Sent packet\s+5\s+Sent packet\s+6\s+Sent
+          packet\s+7\s+Sent packet\s+8\s+Sent packet\s+9\s+Received ACK on 25\s+Received
+          ACK on 26\s+Received ACK on 27\s+Sent final packet\s+for tests\/file1.txt\s+Received
+          ACK 28
+        comparison-method: regex
+        timeout: 1
+        max-score: 2
+    - name: Test2 Receiver
+      id: test2-receiver
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test2 Receiver
+        setup-command: ''
+        command: grep -E 'Received packet [[:digit:]]+ valid CRC$' Test2-receiver-output.txt
+          | sort
+        input: ''
+        expected-output: Received packet\s+0 valid CRC\s+Received packet\s+1 valid
+          CRC\s+Received packet\s+10 valid CRC\s+Received packet\s+11 valid CRC\s+Received
+          packet\s+12 valid CRC\s+Received packet\s+13 valid CRC\s+Received packet\s+14
+          valid CRC\s+Received packet\s+15 valid CRC\s+Received packet\s+16 valid
+          CRC\s+Received packet\s+17 valid CRC\s+Received packet\s+18 valid CRC\s+Received
+          packet\s+19 valid CRC\s+Received packet\s+2 valid CRC\s+Received packet\s+20
+          valid CRC\s+Received packet\s+21 valid CRC\s+Received packet\s+22 valid
+          CRC\s+Received packet\s+23 valid CRC\s+Received packet\s+24 valid CRC\s+Received
+          packet\s+25 valid CRC\s+Received packet\s+26 valid CRC\s+Received packet\s+27
+          valid CRC\s+Received packet\s+3 valid CRC\s+Received packet\s+4 valid CRC\s+Received
+          packet\s+5 valid CRC\s+Received packet\s+6 valid CRC\s+Received packet\s+7
+          valid CRC\s+Received packet\s+8 valid CRC\s+Received packet\s+9 valid CRC
+        comparison-method: regex
+        timeout: 1
+        max-score: 2
+    - name: Test3 Sender
+      id: test3-sender
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test3 Sender
+        setup-command: ''
+        command: head -n 20 Test3-sender-output.txt && tail -n 5 Test3-sender-output.txt
+        input: ''
+        expected-output: Sent packet\s+0\s+Sent packet\s+1\s+Sent packet\s+2\s+Sent
+          packet\s+3\s+Sent packet\s+4\s+Sent packet\s+5\s+Sent packet\s+6\s+Sent
+          packet\s+7\s+Sent packet\s+8\s+Sent packet\s+9\s+Sent packet\s+10\s+Sent
+          packet\s+11\s+Sent packet\s+12\s+Sent packet\s+13\s+Sent packet\s+14\s+Sent
+          packet\s+15\s+Sent packet\s+16\s+Sent packet\s+17\s+Sent packet\s+18\s+Sent
+          packet\s+19\s+Received ACK on 52\s+Received ACK on 53\s+Received ACK on
+          54\s+Sent final packet\s+for tests\/file1.txt\s+Received ACK 55
+        comparison-method: regex
+        timeout: 1
+        max-score: 2
+    - name: Test3 Receiver
+      id: test3-receiver
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test3 Receiver
+        setup-command: ''
+        command: grep -E 'Received packet[[:space:]]+[[:digit:]]+[[:space:]]+valid
+          CRC$' Test3-receiver-output.txt | sort
+        input: ''
+        expected-output: Received packet\s+0 valid CRC\s+Received packet\s+1 valid
+          CRC\s+Received packet\s+10 valid CRC\s+Received packet\s+11 valid CRC\s+Received
+          packet\s+12 valid CRC\s+Received packet\s+13 valid CRC\s+Received packet\s+14
+          valid CRC\s+Received packet\s+15 valid CRC\s+Received packet\s+16 valid
+          CRC\s+Received packet\s+17 valid CRC\s+Received packet\s+18 valid CRC\s+Received
+          packet\s+19 valid CRC\s+Received packet\s+2 valid CRC\s+Received packet\s+20
+          valid CRC\s+Received packet\s+21 valid CRC\s+Received packet\s+22 valid
+          CRC\s+Received packet\s+23 valid CRC\s+Received packet\s+24 valid CRC\s+Received
+          packet\s+25 valid CRC\s+Received packet\s+26 valid CRC\s+Received packet\s+27
+          valid CRC\s+Received packet\s+28 valid CRC\s+Received packet\s+29 valid
+          CRC\s+Received packet\s+3 valid CRC\s+Received packet\s+30 valid CRC\s+Received
+          packet\s+31 valid CRC\s+Received packet\s+32 valid CRC\s+Received packet\s+33
+          valid CRC\s+Received packet\s+34 valid CRC\s+Received packet\s+35 valid
+          CRC\s+Received packet\s+36 valid CRC\s+Received packet\s+37 valid CRC\s+Received
+          packet\s+38 valid CRC\s+Received packet\s+39 valid CRC\s+Received packet\s+4
+          valid CRC\s+Received packet\s+40 valid CRC\s+Received packet\s+41 valid
+          CRC\s+Received packet\s+42 valid CRC\s+Received packet\s+43 valid CRC\s+Received
+          packet\s+44 valid CRC\s+Received packet\s+45 valid CRC\s+Received packet\s+46
+          valid CRC\s+Received packet\s+47 valid CRC\s+Received packet\s+48 valid
+          CRC\s+Received packet\s+49 valid CRC\s+Received packet\s+5 valid CRC\s+Received
+          packet\s+50 valid CRC\s+Received packet\s+51 valid CRC\s+Received packet\s+52
+          valid CRC\s+Received packet\s+53 valid CRC\s+Received packet\s+54 valid
+          CRC\s+Received packet\s+6 valid CRC\s+Received packet\s+7 valid CRC\s+Received
+          packet\s+8 valid CRC\s+Received packet\s+9 valid CRC
+        comparison-method: regex
+        timeout: 1
+        max-score: 2
+    - name: Test4 Sender
+      id: test4-sender
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test4 Sender
+        setup-command: ''
+        command: head -n 5 Test4-sender-output.txt && grep -E 'Resent[[:space:]]+packet[[:space:]]+[[:digit:]][[:digit:]]+'
+          Test4-sender-output.txt && tail -n 5 Test4-sender-output.txt
+        input: ''
+        expected-output: Sent packet\s+0\s+Sent packet\s+1\s+Sent packet\s+2\s+Sent
+          packet\s+3\s+Sent packet\s+4\s+Resent packet\s+10\s+Resent packet\s+11\s+Resent
+          packet\s+12\s+Resent packet\s+13\s+Resent packet\s+14\s+Received ACK on
+          1046\s+Received ACK on 1047\s+Received ACK on 1048\s+Sent final packet\s+for
+          tests\/file2.txt\s+Received ACK 1049
+        comparison-method: regex
+        timeout: 1
+        max-score: 2
+    - name: Test4 Receiver
+      id: test4-receiver
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test4 Receiver
+        setup-command: ''
+        command: head -n 1 Test4-receiver-output.txt && grep -E 'invalid CRC' Test4-receiver-output.txt
+          && tail -n 5 Test4-receiver-output.txt
+        input: ''
+        expected-output: Listening...\s+Received packet\s+10 invalid CRC\s+Acked:\s+1047\s+Received
+          packet\s+1048 valid CRC\s+Acked:\s+1048\s+Acked:\s+1049\s+File outfiles\/Test4-file2-out.txt
+          completed.\s+Received 1049 packets
+        comparison-method: regex
+        timeout: 1
+        max-score: 2
+    - name: Test5 Sender
+      id: test5-sender
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test5 Sender
+        setup-command: ''
+        command: head -n 40 Test5-sender-output.txt && grep -E 'Resent packet 10'
+          Test5-sender-output.txt && grep -E 'Resent packet 550' Test5-sender-output.txt
+          && tail -n 5 Test5-sender-output.txt
+        input: ''
+        expected-output: Sent packet\s+0\s+Sent packet\s+1\s+Sent packet\s+2\s+Sent
+          packet\s+3\s+Sent packet\s+4\s+Sent packet\s+5\s+Sent packet\s+6\s+Sent
+          packet\s+7\s+Sent packet\s+8\s+Sent packet\s+9\s+Sent packet\s+10\s+Sent
+          packet\s+11\s+Sent packet\s+12\s+Sent packet\s+13\s+Sent packet\s+14\s+Sent
+          packet\s+15\s+Sent packet\s+16\s+Sent packet\s+17\s+Sent packet\s+18\s+Sent
+          packet\s+19\s+Sent packet\s+20\s+Sent packet\s+21\s+Sent packet\s+22\s+Sent
+          packet\s+23\s+Sent packet\s+24\s+Sent packet\s+25\s+Sent packet\s+26\s+Sent
+          packet\s+27\s+Sent packet\s+28\s+Sent packet\s+29\s+Sent packet\s+30\s+Sent
+          packet\s+31\s+Sent packet\s+32\s+Sent packet\s+33\s+Sent packet\s+34\s+Sent
+          packet\s+35\s+Sent packet\s+36\s+Sent packet\s+37\s+Sent packet\s+38\s+Sent
+          packet\s+39\s+Resent packet\s+10\s+Resent packet\s+550\s+Received ACK on
+          1026\s+Received ACK on 1027\s+Received ACK on 1028\s+Sent final packet\s+for
+          tests\/file2.txt\s+Received ACK 1029
+        comparison-method: regex
+        timeout: 1
+        max-score: 2
+    - name: Test5 Receiver
+      id: test5-receiver
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test5 Receiver
+        setup-command: ''
+        command: " head -n 1 Test5-receiver-output.txt && grep -E 'invalid CRC' Test5-receiver-output.txt
+          && tail -n 3 Test5-receiver-output.txt"
+        input: ''
+        expected-output: Listening...\s+Received packet\s+10 invalid CRC\s+Received
+          packet\s+550 invalid CRC\s+Acked:\s+1028\s+Acked:\s+1029\s+File outfiles\/Test5-file2-out.txt
+          completed.\s+Received 1029 packets
+        comparison-method: regex
+        timeout: 1
+        max-score: 2
+    - name: Test6 Sender
+      id: test6-sender
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test6 Sender
+        setup-command: ''
+        command: head -n 10 Test6-sender-output.txt && grep -E 'Resent[[:space:]]+packet[[:space:]]1$|Resent[[:space:]]+packet[[:space:]]+10$|Resent[[:space:]]+packet[[:space:]]+20$|Resent[[:space:]]+packet[[:space:]]+600$'
+          Test6-sender-output.txt | sort| uniq && tail -n 5 Test6-sender-output.txt
+        input: ''
+        expected-output: Sent packet\s+0\s+Sent packet\s+1\s+Sent packet\s+2\s+Sent
+          packet\s+3\s+Sent packet\s+4\s+Sent packet\s+5\s+Sent packet\s+6\s+Sent
+          packet\s+7\s+Sent packet\s+8\s+Sent packet\s+9\s+Resent packet\s+1\s+Resent
+          packet\s+10\s+Resent packet\s+20\s+Resent packet\s+600\s+Received ACK on
+          2095\s+Received ACK on 2096\s+Received ACK on 2097\s+Sent final packet\s+for
+          tests\/file2.txt\s+Received ACK 2098
+        comparison-method: regex
+        timeout: 1
+        max-score: 2
+    - name: Test6 Receiver
+      id: test6-receiver
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test6 Receiver
+        setup-command: ''
+        command: " head -n 1 Test6-receiver-output.txt && grep -E 'Received packet
+          [[:digit:]]+ invalid CRC$' Test6-receiver-output.txt && tail -n 5 Test6-receiver-output.txt"
+        input: ''
+        expected-output: 'Listening...\s+Received packet\s+1 invalid CRC\s+Received
+          packet\s+10 invalid CRC\s+Received packet\s+20 invalid CRC\s+Received packet\s+600
+          invalid CRC\s+Acked: 2096\s+Received packet\s+2097 valid CRC\s+Acked: 2097\s+Acked:
+          2098\s+File outfiles\/Test6-file2-out.txt completed.\s+Received 2098 packets'
+        comparison-method: regex
+        timeout: 1
+        max-score: 2
+    - name: Test7 Sender
+      id: test7-sender
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test7 Sender
+        setup-command: ''
+        command: " head -n 10 Test7-sender-output.txt && grep -E 'Resent[[:space:]]+packet[[:space:]]5$|Resent[[:space:]]+packet[[:space:]]+58$|Resent[[:space:]]+packet[[:space:]]+100$|Resent[[:space:]]+packet[[:space:]]+200$'
+          \ Test7-sender-output.txt && tail -n 5 Test7-sender-output.txt"
+        input: ''
+        expected-output: Sent packet\s+0\s+Sent packet\s+1\s+Sent packet\s+2\s+Sent
+          packet\s+3\s+Sent packet\s+4\s+Sent packet\s+5\s+Sent packet\s+6\s+Sent
+          packet\s+7\s+Sent packet\s+8\s+Sent packet\s+9\s+Resent packet\s+5\s+Resent
+          packet\s+58\s+Resent packet\s+100\s+Resent packet\s+200\s+Received ACK on
+          682\s+Received ACK on 683\s+Received ACK on 684\s+Sent final packet\s+for
+          tests\/file3.pdf\s+Received ACK 685
+        comparison-method: regex
+        timeout: 1
+        max-score: 2
+    - name: Test7 Receiver
+      id: test7-receiver
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test7 Receiver
+        setup-command: ''
+        command: grep -E 'Received packet [[:digit:]]+ valid CRC$' Test7-receiver-output.txt
+          | sort | head -n 10 && grep -E 'invalid' Test7-receiver-output.txt
+        input: ''
+        expected-output: Received packet\s+0 valid CRC\s+Received packet\s+1 valid
+          CRC\s+Received packet\s+10 valid CRC\s+Received packet\s+100 valid CRC\s+Received
+          packet\s+101 valid CRC\s+Received packet\s+102 valid CRC\s+Received packet\s+103
+          valid CRC\s+Received packet\s+104 valid CRC\s+Received packet\s+105 valid
+          CRC\s+Received packet\s+106 valid CRC\s+Received packet\s+5 invalid CRC\s+Received
+          packet\s+58 invalid CRC\s+Received packet\s+100 invalid CRC\s+Received packet\s+200
+          invalid CRC
+        comparison-method: regex
+        timeout: 1
+        max-score: 2
+    - name: Make the resend count script runnable
+      id: make-the-resend-count-script-runnable
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: Make the resend count script runnable
+        setup-command: ''
+        command: chmod 700 count-resends.sh
+        timeout: 1
+        max-score: 0
+    - name: Test8 Sender Resend Count
+      id: test8-sender-resend-count
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test8 Sender Resend Count
+        setup-command: ''
+        command: "./count-resends.sh Test8-sender-output.txt 100"
+        input: ''
+        expected-output: 'true'
+        comparison-method: contains
+        timeout: 1
+        max-score: 2
+    - name: Test8 Receiver invalid list
+      id: test8-receiver-invalid-list
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test8 Receiver invalid list
+        setup-command: ''
+        command: grep -E 'Received packet [[:digit:]]+ invalid CRC$' Test8-receiver-output.txt
+          | sort
+        input: ''
+        expected-output: Received packet\s+1 invalid CRC\s+Received packet\s+100 invalid
+          CRC\s+Received packet\s+2 invalid CRC\s+Received packet\s+200 invalid CRC\s+Received
+          packet\s+3 invalid CRC\s+Received packet\s+300 invalid CRC\s+Received packet\s+400
+          invalid CRC\s+Received packet\s+500 invalid CRC
+        comparison-method: regex
+        timeout: 1
+        max-score: 2
+    - name: Test9 Resend Count
+      id: test9-resend-count
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test9 Resend Count
+        setup-command: ''
+        command: "./count-resends.sh Test9-sender-output.txt 800"
+        input: ''
+        expected-output: 'true'
+        comparison-method: contains
+        timeout: 1
+        max-score: 2
+    - name: Test9 Receiver invalid list
+      id: test9-receiver-invalid-list
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test9 Receiver invalid list
+        setup-command: ''
+        command: grep -E 'invalid' Test9-receiver-output.txt | sort
+        input: ''
+        expected-output: Received packet\s+1024 invalid CRC\s+Received packet\s+1025
+          invalid CRC\s+Received packet\s+13000 invalid CRC\s+Received packet\s+2
+          invalid CRC\s+Received packet\s+3 invalid CRC\s+Received packet\s+3003 invalid
+          CRC\s+Received packet\s+4004 invalid CRC\s+Received packet\s+5005 invalid
+          CRC\s+Received packet\s+52 invalid CRC\s+Received packet\s+6006 invalid
+          CRC\s+Received packet\s+7007 invalid CRC\s+Received packet\s+800 invalid
+          CRC\s+Received packet\s+801 invalid CRC\s+Received packet\s+802 invalid
+          CRC\s+Received packet\s+900 invalid CRC
+        comparison-method: regex
+        timeout: 1
+        max-score: 2
+    - name: Test10 Sender timeouts
+      id: test10-sender-timeouts
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test10 Sender timeouts
+        setup-command: ''
+        command: grep -E 'Timed out' Test10-sender-output.txt | wc -l
+        input: ''
+        expected-output: "[1-9]+\\d*"
+        comparison-method: regex
+        timeout: 1
+        max-score: 2
+    - name: Test10 Receiver duplicate Acks 9
+      id: test10-receiver-duplicate-acks-9
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test10 Receiver duplicate Acks 9
+        setup-command: ''
+        command: grep -E 'Acked:[[:space:]]+9$' Test10-receiver-output.txt | wc -l
+        input: ''
+        expected-output: "\\d\\d+"
+        comparison-method: regex
+        timeout: 1
+        max-score: 2
+    - name: Test11 Sender count resends
+      id: test11-sender-count-resends
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test11 Sender count resends
+        setup-command: ''
+        command: "./count-resends.sh Test11-sender-output.txt 10 && ./count-resends.sh
+          Test11-sender-output.txt 500"
+        input: ''
+        expected-output: |-
+          true
+          false
+        comparison-method: exact
+        timeout: 1
+        max-score: 2
+    - name: Test11 Receiver outside count
+      id: test11-receiver-outside-count
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test11 Receiver outside count
+        setup-command: ''
+        command: grep -E 'outside' Test11-receiver-output.txt | wc -l
+        input: ''
+        expected-output: "\\d\\d+"
+        comparison-method: regex
+        timeout: 1
+        max-score: 2
+    - name: Test12 Receiver invalid
+      id: test12-receiver-invalid
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test12 Receiver invalid
+        setup-command: ''
+        command: grep -E 'invalid' Test12-receiver-output.txt | sort && tail -n 3
+          Test12-receiver-output.txt
+        input: ''
+        expected-output: 'Received packet\s+2 invalid CRC\s+Received packet\s+3 invalid
+          CRC\s+Received packet\s+30 invalid CRC\s+Acked: 34\s+Acked: 35\s+File outfiles\/Test12-file1-out.txt
+          completed.\s+Received 35 packets'
+        comparison-method: regex
+        timeout: 1
+        max-score: 2
+    - name: Test12 Sender Duplicate ACKs 1
+      id: test12-sender-duplicate-acks-1
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test12 Sender Duplicate ACKs 1
+        setup-command: ''
+        command: grep -E 'Received ACK on 1' Test12-sender-output.txt | wc -l
+        input: ''
+        expected-output: "\\d\\d+"
+        comparison-method: regex
+        timeout: 1
+        max-score: 2
+    - name: Test13 Sender Resent
+      id: test13-sender-resent
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test13 Sender Resent
+        setup-command: ''
+        command: grep -E 'Resent[[:space:]]+packet[[:space:]]+5$|Resent[[:space:]]+packet[[:space:]]+15$|Resent[[:space:]]+packet[[:space:]]+25$|Resent[[:space:]]+packet[[:space:]]+9$|Resent[[:space:]]+packet[[:space:]]+71$|Resent[[:space:]]+packet[[:space:]]+501$|Resent[[:space:]]+packet[[:space:]]+2000$|Resent[[:space:]]+packet[[:space:]]+10000$|Resent[[:space:]]+packet[[:space:]]+10500$'
+          Test13-sender-output.txt | sort | uniq
+        input: ''
+        expected-output: Resent packet\s+10000\s+Resent packet\s+10500\s+Resent packet\s+15\s+Resent
+          packet\s+2000\s+Resent packet\s+25\s+Resent packet\s+5\s+Resent packet\s+501\s+Resent
+          packet\s+71\s+Resent packet\s+9
+        comparison-method: regex
+        timeout: 1
+        max-score: 2
+    - name: Test13 Receiver begin and end
+      id: test13-receiver-begin-and-end
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test13 Receiver begin and end
+        setup-command: ''
+        command: " head -n 20 Test13-receiver-output.txt | sort && tail -n 3 Test13-receiver-output.txt"
+        input: ''
+        expected-output: Acked:\s+0\s+Acked:\s+1\s+Acked:\s+2\s+Acked:\s+3\s+Acked:\s+4\s+Acked:\s+4\s+Acked:\s+4\s+Acked:\s+4\s+Acked:\s+4\s+Listening...\s+Received
+          packet\s+0 valid CRC\s+Received packet\s+1 valid CRC\s+Received packet\s+2
+          valid CRC\s+Received packet\s+3 valid CRC\s+Received packet\s+4 valid CRC\s+Received
+          packet\s+5 invalid CRC\s+Received packet\s+6 valid CRC\s+Received packet\s+7
+          valid CRC\s+Received packet\s+8 valid CRC\s+Received packet\s+9 invalid
+          CRC\s+Acked:\s+11037\s+Acked:\s+11038\s+File outfiles\/Test13-file2-out.txt
+          completed.\s+Received 11038 packets
+        comparison-method: regex
+        timeout: 1
+        max-score: 2
+    - name: Test14 Receiver duplicate ACKs
+      id: test14-receiver-duplicate-acks
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test14 Receiver duplicate ACKs
+        setup-command: chmod 700 ./count-duplicate-acks.sh
+        command: "./count-duplicate-acks.sh Test14-receiver-output.txt 6 10 && ./count-duplicate-acks.sh
+          Test14-receiver-output.txt 16 5"
+        input: ''
+        expected-output: |-
+          true
+          true
+        comparison-method: exact
+        timeout: 1
+        max-score: 2
+    - name: Test14 Sender
+      id: test14-sender
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test14 Sender
+        setup-command: ''
+        command: head -n 10 Test14-sender-output.txt && tail -n 10 Test14-sender-output.txt
+        input: ''
+        expected-output: Sent packet\s+0\s+Sent packet\s+1\s+Sent packet\s+2\s+Sent
+          packet\s+3\s+Sent packet\s+4\s+Sent packet\s+5\s+Sent packet\s+6\s+Sent
+          packet\s+7\s+Sent packet\s+8\s+Sent packet\s+9\s+Received ACK on 16\s+Received
+          ACK on 16\s+Received ACK on 17\s+Received ACK on 18\s+Received ACK on 19\s+Received
+          ACK on 20\s+Received ACK on 21\s+Received ACK on 22\s+Sent final packet\s+for
+          tests\/file1.txt\s+Received ACK 23
+        comparison-method: regex
+        timeout: 1
+        max-score: 2
+    - name: Test15 Sender resends
+      id: test15-sender-resends
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test15 Sender resends
+        setup-command: ''
+        command: grep -E 'Resent[[:space:]]+packet[[:space:]]+1$|Resent[[:space:]]+packet[[:space:]]+11$|Resent[[:space:]]+packet[[:space:]]+23$|Resent[[:space:]]+packet[[:space:]]+800$|Resent[[:space:]]+packet[[:space:]]+1200$|Resent[[:space:]]+packet[[:space:]]+4000$|Resent[[:space:]]+packet[[:space:]]+4001$|Resent[[:space:]]+packet[[:space:]]+4002$|Resent[[:space:]]+packet[[:space:]]+5000$|Resent[[:space:]]+packet[[:space:]]+10000$|Resent[[:space:]]+packet[[:space:]]+10100$|Resent[[:space:]]+packet[[:space:]]+11000$|Resent[[:space:]]+packet[[:space:]]+11001$|Resent[[:space:]]+packet[[:space:]]+11111$'
+          Test15-sender-output.txt | sort | uniq
+        input: ''
+        expected-output: Resent packet\s+10000\s+Resent packet\s+10100\s+Resent packet\s+11\s+Resent
+          packet\s+11000\s+Resent packet\s+11001\s+Resent packet\s+11111\s+Resent
+          packet\s+1200\s+Resent packet\s+23\s+Resent packet\s+4000\s+Resent packet\s+4001\s+Resent
+          packet\s+4002\s+Resent packet\s+5000\s+Resent packet\s+800
+        comparison-method: regex
+        timeout: 1
+        max-score: 2
+    - name: Test15 Receiver duplicate Ack count
+      id: test15-receiver-duplicate-ack-count
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test15 Receiver duplicate Ack count
+        setup-command: chmod 700 ./count-duplicate-acks.sh
+        command: "./count-duplicate-acks.sh Test15-receiver-output.txt 11 5 && ./count-duplicate-acks.sh
+          Test15-receiver-output.txt 23 5 &&  ./count-duplicate-acks.sh Test15-receiver-output.txt
+          23 500"
+        input: ''
+        expected-output: |-
+          true
+          true
+          false
+        comparison-method: regex
+        timeout: 1
+        max-score: 2
+    - name: Test16 Receiver Missing parameters
+      id: test16-receiver-missing-parameters
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test16 Receiver Missing parameters
+        setup-command: ''
+        command: cat Test16-*
+        input: ''
+        expected-output: 'Syntax: SlidingWindowReceiver-5785 -ip=ip -port=p -outfile=f
+          -rws=r'
+        comparison-method: contains
+        timeout: 1
+        max-score: 1
+    - name: Test16 Sender Missing parameter
+      id: test16-sender-missing-parameter
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test16 Sender Missing parameter
+        setup-command: ''
+        command: cat Test16-sender-output.txt
+        input: ''
+        expected-output: |-
+          Syntax: SlidingWindowClient-5785 -dest=ip -port=p -f=filename -packetsize=bytes -sws=size -rtt=ms [-droplist=1,2]
+          -droplist is optional.  Refers to packets that will be sent incorrectly the first time.  The list should be comma separated without spaces.  Example: 1,3,4
+        comparison-method: contains
+        timeout: 1
+        max-score: 1
+    - name: Test17 Receiver Missing parameter
+      id: test17-receiver-missing-parameter
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test17 Receiver Missing parameter
+        setup-command: ''
+        command: cat Test17-receiver-output.txt
+        input: ''
+        expected-output: 'Syntax: SlidingWindowReceiver-5785 -ip=ip -port=p -outfile=f
+          -rws=r'
+        comparison-method: contains
+        timeout: 1
+        max-score: 1
+    - name: Test17 Sender Missing parameter
+      id: test17-sender-missing-parameter
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test17 Sender Missing parameter
+        setup-command: ''
+        command: cat Test17-sender-output.txt
+        input: ''
+        expected-output: |-
+          Syntax: SlidingWindowClient-5785 -dest=ip -port=p -f=filename -packetsize=bytes -sws=size -rtt=ms [-droplist=1,2]
+          -droplist is optional.  Refers to packets that will be sent incorrectly the first time.  The list should be comma separated without spaces.  Example: 1,3,4
+        comparison-method: contains
+        timeout: 1
+        max-score: 1
+    - name: Test18 Receiver missing parameter
+      id: test18-receiver-missing-parameter
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test18 Receiver missing parameter
+        setup-command: ''
+        command: cat Test18-receiver-output.txt
+        input: ''
+        expected-output: |-
+          Error: RWS must be positive
+          Syntax: SlidingWindowReceiver-5785 -ip=ip -port=p -outfile=f -rws=r
+        comparison-method: contains
+        timeout: 1
+        max-score: 1
+    - name: Test18 Sender Illegal Parameter
+      id: test18-sender-illegal-parameter
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test18 Sender Illegal Parameter
+        setup-command: ''
+        command: cat Test18-sender-output.txt
+        input: ''
+        expected-output: |-
+          Error parsing port: For input string: "abc"
+          Syntax: SlidingWindowClient-5785 -dest=ip -port=p -f=filename -packetsize=bytes -sws=size -rtt=ms [-droplist=1,2]
+          -droplist is optional.  Refers to packets that will be sent incorrectly the first time.  The list should be comma separated without spaces.  Example: 1,3,4
+        comparison-method: contains
+        timeout: 1
+        max-score: 1
+    - name: Test19 Receiver Illegal parameter
+      id: test19-receiver-illegal-parameter
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test19 Receiver Illegal parameter
+        setup-command: ''
+        command: cat Test19-receiver-output.txt
+        input: ''
+        expected-output: |-
+          Error parsing listening address: 300.0.1: Name or service not known
+          Syntax: SlidingWindowReceiver-5785 -ip=ip -port=p -outfile=f -rws=r
+        comparison-method: contains
+        timeout: 1
+        max-score: 1
+    - name: Test19 Sender Illegal parameter
+      id: test19-sender-illegal-parameter
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Test19 Sender Illegal parameter
+        setup-command: ''
+        command: cat Test19-sender-output.txt
+        input: ''
+        expected-output: |-
+          Error: SWS must be positive.
+          Syntax: SlidingWindowClient-5785 -dest=ip -port=p -f=filename -packetsize=bytes -sws=size -rtt=ms [-droplist=1,2]
+          -droplist is optional.  Refers to packets that will be sent incorrectly the first time.  The list should be comma separated without spaces.  Example: 1,3,4
+        comparison-method: contains
+        timeout: 1
+        max-score: 1
+    - name: Readme TZ
+      id: readme-tz
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Readme TZ
+        setup-command: ''
+        command: cat README.md
+        input: ''
+        expected-output: "\\d\\d\\d\\d\\d\\d\\d\\d\\d"
+        comparison-method: regex
+        timeout: 1
+        max-score: 2
+    - name: Readme hours
+      id: readme-hours
+      uses: classroom-resources/autograding-io-grader@v1
+      with:
+        test-name: Readme hours
+        setup-command: ''
+        command: cat README.md
+        input: ''
+        expected-output: "\\d+\\s*hours"
+        comparison-method: regex
+        timeout: 1
+        max-score: 3
+    - name: Autograding Reporter
+      uses: classroom-resources/autograding-grading-reporter@v1
+      env:
+        GRADLE-BUILD-JARS_RESULTS: "${{steps.gradle-build-jars.outputs.result}}"
+        COPY-SENDER-JAR_RESULTS: "${{steps.copy-sender-jar.outputs.result}}"
+        COPY-RECEIVER-JAR_RESULTS: "${{steps.copy-receiver-jar.outputs.result}}"
+        MAKE-OUTPUT-DIR_RESULTS: "${{steps.make-output-dir.outputs.result}}"
+        RUN-TEST-SCRIPT_RESULTS: "${{steps.run-test-script.outputs.result}}"
+        CHECK-FILE-CONTENTS_RESULTS: "${{steps.check-file-contents.outputs.result}}"
+        TEST1-SENDER_RESULTS: "${{steps.test1-sender.outputs.result}}"
+        TEST1-RECEIVER_RESULTS: "${{steps.test1-receiver.outputs.result}}"
+        TEST2-SENDER_RESULTS: "${{steps.test2-sender.outputs.result}}"
+        TEST2-RECEIVER_RESULTS: "${{steps.test2-receiver.outputs.result}}"
+        TEST3-SENDER_RESULTS: "${{steps.test3-sender.outputs.result}}"
+        TEST3-RECEIVER_RESULTS: "${{steps.test3-receiver.outputs.result}}"
+        TEST4-SENDER_RESULTS: "${{steps.test4-sender.outputs.result}}"
+        TEST4-RECEIVER_RESULTS: "${{steps.test4-receiver.outputs.result}}"
+        TEST5-SENDER_RESULTS: "${{steps.test5-sender.outputs.result}}"
+        TEST5-RECEIVER_RESULTS: "${{steps.test5-receiver.outputs.result}}"
+        TEST6-SENDER_RESULTS: "${{steps.test6-sender.outputs.result}}"
+        TEST6-RECEIVER_RESULTS: "${{steps.test6-receiver.outputs.result}}"
+        TEST7-SENDER_RESULTS: "${{steps.test7-sender.outputs.result}}"
+        TEST7-RECEIVER_RESULTS: "${{steps.test7-receiver.outputs.result}}"
+        MAKE-THE-RESEND-COUNT-SCRIPT-RUNNABLE_RESULTS: "${{steps.make-the-resend-count-script-runnable.outputs.result}}"
+        TEST8-SENDER-RESEND-COUNT_RESULTS: "${{steps.test8-sender-resend-count.outputs.result}}"
+        TEST8-RECEIVER-INVALID-LIST_RESULTS: "${{steps.test8-receiver-invalid-list.outputs.result}}"
+        TEST9-RESEND-COUNT_RESULTS: "${{steps.test9-resend-count.outputs.result}}"
+        TEST9-RECEIVER-INVALID-LIST_RESULTS: "${{steps.test9-receiver-invalid-list.outputs.result}}"
+        TEST10-SENDER-TIMEOUTS_RESULTS: "${{steps.test10-sender-timeouts.outputs.result}}"
+        TEST10-RECEIVER-DUPLICATE-ACKS-9_RESULTS: "${{steps.test10-receiver-duplicate-acks-9.outputs.result}}"
+        TEST11-SENDER-COUNT-RESENDS_RESULTS: "${{steps.test11-sender-count-resends.outputs.result}}"
+        TEST11-RECEIVER-OUTSIDE-COUNT_RESULTS: "${{steps.test11-receiver-outside-count.outputs.result}}"
+        TEST12-RECEIVER-INVALID_RESULTS: "${{steps.test12-receiver-invalid.outputs.result}}"
+        TEST12-SENDER-DUPLICATE-ACKS-1_RESULTS: "${{steps.test12-sender-duplicate-acks-1.outputs.result}}"
+        TEST13-SENDER-RESENT_RESULTS: "${{steps.test13-sender-resent.outputs.result}}"
+        TEST13-RECEIVER-BEGIN-AND-END_RESULTS: "${{steps.test13-receiver-begin-and-end.outputs.result}}"
+        TEST14-RECEIVER-DUPLICATE-ACKS_RESULTS: "${{steps.test14-receiver-duplicate-acks.outputs.result}}"
+        TEST14-SENDER_RESULTS: "${{steps.test14-sender.outputs.result}}"
+        TEST15-SENDER-RESENDS_RESULTS: "${{steps.test15-sender-resends.outputs.result}}"
+        TEST15-RECEIVER-DUPLICATE-ACK-COUNT_RESULTS: "${{steps.test15-receiver-duplicate-ack-count.outputs.result}}"
+        TEST16-RECEIVER-MISSING-PARAMETERS_RESULTS: "${{steps.test16-receiver-missing-parameters.outputs.result}}"
+        TEST16-SENDER-MISSING-PARAMETER_RESULTS: "${{steps.test16-sender-missing-parameter.outputs.result}}"
+        TEST17-RECEIVER-MISSING-PARAMETER_RESULTS: "${{steps.test17-receiver-missing-parameter.outputs.result}}"
+        TEST17-SENDER-MISSING-PARAMETER_RESULTS: "${{steps.test17-sender-missing-parameter.outputs.result}}"
+        TEST18-RECEIVER-MISSING-PARAMETER_RESULTS: "${{steps.test18-receiver-missing-parameter.outputs.result}}"
+        TEST18-SENDER-ILLEGAL-PARAMETER_RESULTS: "${{steps.test18-sender-illegal-parameter.outputs.result}}"
+        TEST19-RECEIVER-ILLEGAL-PARAMETER_RESULTS: "${{steps.test19-receiver-illegal-parameter.outputs.result}}"
+        TEST19-SENDER-ILLEGAL-PARAMETER_RESULTS: "${{steps.test19-sender-illegal-parameter.outputs.result}}"
+        README-TZ_RESULTS: "${{steps.readme-tz.outputs.result}}"
+        README-HOURS_RESULTS: "${{steps.readme-hours.outputs.result}}"
+      with:
+        runners: gradle-build-jars,copy-sender-jar,copy-receiver-jar,make-output-dir,run-test-script,check-file-contents,test1-sender,test1-receiver,test2-sender,test2-receiver,test3-sender,test3-receiver,test4-sender,test4-receiver,test5-sender,test5-receiver,test6-sender,test6-receiver,test7-sender,test7-receiver,make-the-resend-count-script-runnable,test8-sender-resend-count,test8-receiver-invalid-list,test9-resend-count,test9-receiver-invalid-list,test10-sender-timeouts,test10-receiver-duplicate-acks-9,test11-sender-count-resends,test11-receiver-outside-count,test12-receiver-invalid,test12-sender-duplicate-acks-1,test13-sender-resent,test13-receiver-begin-and-end,test14-receiver-duplicate-acks,test14-sender,test15-sender-resends,test15-receiver-duplicate-ack-count,test16-receiver-missing-parameters,test16-sender-missing-parameter,test17-receiver-missing-parameter,test17-sender-missing-parameter,test18-receiver-missing-parameter,test18-sender-illegal-parameter,test19-receiver-illegal-parameter,test19-sender-illegal-parameter,readme-tz,readme-hours

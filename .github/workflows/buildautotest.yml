@@ -1,0 +1,105 @@
+name: Java CI with Gradle
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      # Configure Gradle for optimal use in GiHub Actions, including caching of downloaded dependencies.
+      # See: https://github.com/gradle/actions/blob/main/setup-gradle/README.md
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@417ae3ccd767c252f5661f1ace9f835f9654f2b5
+
+      - name: Build with Gradle
+        run: gradle jar
+
+      - name: Save Sliding Window Sender JAR
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name: SlidingWindowSender-5785.jar
+          path: SlidingWindowSender/build/libs
+          retention-days: 30
+
+      - name: Save Sliding Window Receiver JAR
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name: SlidingWindowReceiver-5785.jar
+          path: SlidingWindowReceiver/build/libs
+          retention-days: 30
+
+      - name: Complete sending with acks actual
+        run: |
+          cp SlidingWindowSender/build/libs/SlidingWindowSender-5785.jar .
+          cp SlidingWindowReceiver/build/libs/SlidingWindowReceiver-5785.jar .
+          mkdir outfiles
+          chmod 700 sliding-window-tests.bat
+          ./sliding-window-tests.bat
+
+      - name: Save outfiles and sha256sum results
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name: outfiles
+          path: outfiles/
+          retention-days: 30
+
+      - name: Save sender output
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name: client-output
+          path: ./Test*-sender-output.txt
+          retention-days: 30
+
+      - name: Save receiver output
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name: server-output
+          path: Test*-receiver-output.txt
+          retention-days: 30
+
+      - name: generate javadoc
+        run: gradle javadoc
+
+      - name: Save Sliding Window Sender Javadoc
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name: SlidingWindowSender-Javadoc
+          path: SlidingWindowSender/build/docs/javadoc
+          retention-days: 30
+
+      - name: Save Sliding Window Receiver Javadoc
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name: SlidingWindowReceiver-Javadoc
+          path: SlidingWindowReceiver/build/docs/javadoc
+          retention-days: 30
+
+  dependency-submission:
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
